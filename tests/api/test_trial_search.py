@@ -98,7 +98,7 @@ def test_required_field_values_are_valid(zip_code, radius):
         assert trial.get("sponsored_trial_phase") in ["1", "1/2", "2", "2b", "3", "N/A"], \
             f"Unexpected trial phase for {zip_code=} {radius=}"
 
-        # Distance should not be non and exceed radious
+        # Distance should not be non and exceed radius
         distance = trial.get("distance_to_closest_location_in_miles")
         assert distance is not None and distance <= radius, \
             f"Distance {distance} > radius {radius} for {zip_code=}"
@@ -126,7 +126,7 @@ def test_trial_search_chicago_trail():
         assert expected in found_pairs, f"Expected pair {expected} not found in the response."
 
 @patch("requests.get")
-def test_mock_trail_serach_chicago_trail(mock_get):
+def test_mock_trail_search_chicago_trail(mock_get):
     zip_code = "60616"
     radius = 6000
     db_data = get_trial_data_from_db()

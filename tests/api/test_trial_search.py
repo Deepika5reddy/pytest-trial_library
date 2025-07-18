@@ -59,10 +59,10 @@ def test_trial_search_response_schema(zip_code, radius):
     assert response.status_code == 200, f"Expected 200, got {response.status_code} for {zip_code=} {radius=}"
 
     data = response.json()
-    assert isinstance(data, list), f"Response should be a list for {zip_code=} {radius=}"
+    assert isinstance(data, list), f"Response should be list for {zip_code=} {radius=}"
 
     for trial in data:
-        assert isinstance(trial, dict), "Each trial must be a dictionary"
+        assert isinstance(trial, dict), "Each trial is dictionary"
         for field, expected_type in REQUIRED_FIELDS.items():
             assert field in trial, f"Missing field: {field}"
             assert isinstance(trial[field], expected_type), (
@@ -84,18 +84,18 @@ def test_required_field_values_are_valid(zip_code, radius):
     assert isinstance(data, list), f"Expected list, got {type(data)}"
 
     for trial in data:
-        # Trial name must not be empty
+        # name is mandatory
         assert trial.get("sponsored_trial_name"), f"Missing name for {zip_code=} {radius=}"
 
-        # URL must start with http/https
+        # URL should start with https
         url = trial.get("sponsored_trial_study_url", "")
         assert url.startswith("http"), f"Invalid URL '{url}' for {zip_code=} {radius=}"
 
-        # Phase must be a valid value
+        # Phase must be a valid numeric value
         assert trial.get("sponsored_trial_phase") in ["1", "1/2", "2", "2b", "3", "N/A"], \
             f"Unexpected trial phase for {zip_code=} {radius=}"
 
-        # Distance should not exceed radius
+        # Distance should not be non and exceed radious
         distance = trial.get("distance_to_closest_location_in_miles")
         assert distance is not None and distance <= radius, \
             f"Distance {distance} > radius {radius} for {zip_code=}"
@@ -116,7 +116,7 @@ def test_trial_search_chicago_trail():
     response = requests.get(BASE_URL, params={"zip5_code": zip_code, "radius_in_miles": radius})
     assert response.status_code == 200
 
-    data = response.json()  # <- define `data` here
+    data = response.json()
     found_pairs = [(trial.get("sponsored_trial_acronym", ""), trial.get("sponsored_trial_conditions", "")) for trial in data]
 
     for expected in expected_pairs:

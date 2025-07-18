@@ -4,6 +4,7 @@ from itertools import product
 from utilities.configuration import get_trial_search_base_url
 from utilities.zipcode import get_realistic_zip_codes
 from utilities.schema_validator import REQUIRED_FIELDS
+from utilities.chicago_expected_trials import expected_pairs
 
 ZIP_CODES = get_realistic_zip_codes(count=2)
 RADIUS_VALUES = [50, 100, 150, 250, 6000]
@@ -15,7 +16,7 @@ test_cases = list(product(ZIP_CODES, RADIUS_VALUES))
 @pytest.mark.positive
 @pytest.mark.parametrize("zip_code,radius", test_cases)
 def test_trial_search_by_zip_and_radius(zip_code, radius):
-    """Validate API response for multiple zip codes and radius values"""
+    """Validate API response for combination of zipcode and radius"""
     params = {
         "zip5_code": zip_code,
         "radius_in_miles": radius
@@ -26,12 +27,14 @@ def test_trial_search_by_zip_and_radius(zip_code, radius):
 
     data = response.json()
     assert isinstance(data, list), f"Response is not a list for zip {zip_code} radius {radius}"
+
 @pytest.mark.negative
 @pytest.mark.parametrize("radius", [0, -1, -100,])
 def test_trial_search_invalid_radius(radius):
     zip_code = "60616"
     response = requests.get(BASE_URL, params={"zip5_code": zip_code, "radius_in_miles": radius})
     assert response.status_code == 400
+
 @pytest.mark.negative
 def test_trial_search_empty_zipcode():
     """Verify that API returns an error for empty ZIP code"""
@@ -45,10 +48,11 @@ def test_trial_search_empty_zipcode():
     assert response.status_code == 400, (
         f"Expected failure for empty ZIP code, but got {response.status_code}"
     )
+
 @pytest.mark.schema
 @pytest.mark.parametrize("zip_code,radius", test_cases)
 def test_trial_search_response_schema(zip_code, radius):
-    """Test if the response schema matches the expected structure for zip and radius"""
+    """Test if the response schema matches the expected structure fromm schema validator"""
     params = {"zip5_code": zip_code, "radius_in_miles": radius}
     response = requests.get(BASE_URL, params=params)
 
@@ -102,3 +106,19 @@ def test_required_field_values_are_valid(zip_code, radius):
 
         # Location name must exist
         assert trial.get("closest_sponsored_trial_location_name"), "Missing trial location name"
+
+
+@pytest.mark.schema
+@pytest.mark.positive
+def test_trial_search_chicago_trail():
+    zip_code = "60616"
+    radius = 6000
+
+    response = requests.get(BASE_URL, params={"zip5_code": zip_code, "radius_in_miles": radius})
+    assert response.status_code == 200
+
+    data = response.json()  # <- define `data` here
+    found_pairs = [(trial.get("sponsored_trial_acronym", ""), trial.get("sponsored_trial_conditions", "")) for trial in data]
+
+    for expected in expected_pairs:
+        assert expected in found_pairs, f"Expected pair {expected} not found in the response."

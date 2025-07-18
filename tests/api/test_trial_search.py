@@ -5,6 +5,9 @@ from utilities.configuration import get_trial_search_base_url
 from utilities.zipcode import get_realistic_zip_codes
 from utilities.schema_validator import REQUIRED_FIELDS
 from utilities.chicago_expected_trials import expected_pairs
+from unittest.mock import patch, MagicMock
+from utilities.db_reader import get_trial_data_from_db
+import requests
 
 ZIP_CODES = get_realistic_zip_codes(count=2)
 RADIUS_VALUES = [50, 100, 150, 250, 6000]
@@ -121,3 +124,44 @@ def test_trial_search_chicago_trail():
 
     for expected in expected_pairs:
         assert expected in found_pairs, f"Expected pair {expected} not found in the response."
+
+@patch("requests.get")
+def test_mock_trail_serach_chicago_trail(mock_get):
+    zip_code = "60616"
+    radius = 6000
+    db_data = get_trial_data_from_db()
+
+    # Setup the mock to return DB data as .json()
+    mock_response = MagicMock()
+    mock_response.status_code = 200
+    mock_response.json.return_value = db_data
+    mock_get.return_value = mock_response
+
+    # Real test logic (requests.get will return db_data now)
+    response = requests.get(BASE_URL, params={"zip5_code": zip_code, "radius_in_miles": radius})
+    assert response.status_code == 200
+
+    data = response.json()
+    print(data)
+    expected_data = [
+        {
+            'sponsored_trial_acronym': 'trial123',
+            'sponsored_trial_name': 'Cancer Study Phase 1',
+            'closest_sponsored_trial_location_name': 'Chicago, IL',
+            'zip5_code': '60616',
+            'radius_in_miles': 50,
+            'sponsored_trial_conditions': '["Cancer", "Stage 1"]',
+            'status': 'Recruiting'
+        },
+        {
+            'sponsored_trial_acronym': 'trial124',
+            'sponsored_trial_name': 'Diabetes Prevention Study',
+            'closest_sponsored_trial_location_name': 'Chicago, IL',
+            'zip5_code': '60616',
+            'radius_in_miles': 100,
+            'sponsored_trial_conditions': '["Diabetes", "Prediabetes"]',
+            'status': 'Completed'
+        }
+    ]
+
+    assert data == expected_data, "Mocked response data does not match expected trial data"

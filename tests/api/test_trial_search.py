@@ -113,7 +113,6 @@ def test_required_field_values_are_valid(zip_code, radius):
 def test_trial_search_chicago_trail():
     zip_code = "60616"
     radius = 6000
-
     response = requests.get(BASE_URL, params={"zip5_code": zip_code, "radius_in_miles": radius})
     assert response.status_code == 200
 
